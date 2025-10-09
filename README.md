@@ -1,2 +1,3 @@
-# micro-theory
-numpy / latex for my micro theory course at Northeastern
+# Econ Learning Repository
+
+Housing latex scrap, python apps for math visualizations, and databricks code for paper replications.
