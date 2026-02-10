@@ -219,8 +219,57 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""
+    ### Part (a)
+    """)
+    return
+
+
+@app.cell
 def _():
-    # ...
+    # Latex symbols for dynamic markdown:
+    x_i_la = r"$\boldsymbol{x_i}$"
+    y_i_la = r"$\boldsymbol{y_i}$"
+    z_i_la = r"$\boldsymbol{z_i}$"
+    eps_i_la = r"$\boldsymbol{{\epsilon}_i}$"
+    exp_la = r"$\boldsymbol{E}$"
+    exp_cond = r"$\boldsymbol{E[\boldsymbol{y_i}|\boldsymbol{x_i}, \boldsymbol{{\epsilon}_i}]}$"
+    y_formula = r"$3 + \boldsymbol{x_i} + \boldsymbol{{x_i}^3} + \boldsymbol{E[\boldsymbol{{\epsilon}_i}|\boldsymbol{x_i}, \boldsymbol{z_i}]}$"
+    eps_exp = r"$\boldsymbol{E[\boldsymbol{{\epsilon}_i}|\boldsymbol{x_i}, \boldsymbol{z_i}]} = 0$"
+    y_formula_reduced = r"$3 + \boldsymbol{x_i} + \boldsymbol{{x_i}^3}$"
+    return (
+        eps_exp,
+        eps_i_la,
+        exp_cond,
+        x_i_la,
+        y_formula,
+        y_formula_reduced,
+        y_i_la,
+    )
+
+
+@app.cell
+def _(
+    eps_exp,
+    eps_i_la,
+    exp_cond,
+    mo,
+    x_i_la,
+    y_formula,
+    y_formula_reduced,
+    y_i_la,
+):
+    mo.md(f"""
+    Given that {x_i_la} is independent of {eps_i_la}, we see that, plugging in the equation for {y_i_la}:
+
+    {exp_cond} = {y_formula}
+
+    But we know that {eps_exp}, so we simply have:
+
+    {y_formula_reduced}
+
+    """)
     return
 
 
@@ -261,7 +310,7 @@ def _(np):
 
         # Run the simulations:
         for i in range(trials):
-    
+
             # Construct the y = Xb + e elements:
             if e_dist_type == 'Normal':
                 e = np.random.standard_normal(vec_len)
@@ -272,7 +321,7 @@ def _(np):
             X_mat = np.column_stack([ones, X_values])
             b = np.array([1,2])
             y_vector = (X_mat @ b) + e    
-    
+
             # Run the OLS / covariance estimations:
             ols_betas[i], covariances[i] = get_ols_and_covariance_estimators(X_i=X_mat, y_i=y_vector, N=vec_len)
 
