@@ -12,8 +12,10 @@ def _():
     import altair as alt
     import seaborn as so
     import statsmodels.api as stats
+    import matplotlib.pyplot as plt
+    from scipy import stats as scipy_stats
     # from scipy import stats
-    return mo, np, pd, so, stats
+    return mo, np, pd, plt, scipy_stats, so, stats
 
 
 @app.cell
@@ -179,7 +181,7 @@ def _(df, stats):
     # Model Output:
     ols_beta_w10 = ols_model_w10.fit().params.loc['schooling']
     ols_model_w10.fit().summary()
-    return ols_beta_w10, ols_model_w10
+    return (ols_beta_w10,)
 
 
 @app.cell
@@ -239,31 +241,49 @@ def _(mo):
 
 
 @app.cell
-def _(np, ols_model_w10, pd, stats):
-    # Prepare a custom function which return a list containing a column vector of OLS coefficients and the standard covariance estimation:
+def _(np):
+    # Prepare a custom function which returns an OLS estimator:
+    def get_ols_and_covariance_estimators(X_i, y_i, N):
 
-    def get_ols_and_covariance_estimates(X : pd.DataFrame, y : pd.Series):
+        # Create the OLS formula terms using numpy:
+        XtX_inv = np.linalg.inv(X_i.T @ X_i)
+        b_hat = XtX_inv @ X_i.T @ y_i
+        resid = y_i - X_i @ b_hat
+        s2 = (resid @ resid) / (N - 2)
+        cov_est = s2 * XtX_inv[1, 1]
+        return b_hat[1], cov_est
+
+
+    def run_monte_carlo_OLS_simulation(vec_len : int, trials : int, e_dist_type : str = 'Normal'):
+
+        ols_betas = np.zeros(trials)
+        covariances = np.zeros(trials)
+
+        # Run the simulations:
+        for i in range(trials):
     
-        # Fit the OLS model:
-        _ols_model = stats.OLS(
-            endog=y,
-            exog=stats.add_constant(X)
-        ).fit()
+            # Construct the y = Xb + e elements:
+            if e_dist_type == 'Normal':
+                e = np.random.standard_normal(vec_len)
+            elif e_dist_type == 'Logistic':
+                e = np.random.logistic(loc=0, scale=1, size=vec_len)
+            X_values = np.random.standard_normal(vec_len)
+            ones = np.ones(vec_len) # intercept column of X
+            X_mat = np.column_stack([ones, X_values])
+            b = np.array([1,2])
+            y_vector = (X_mat @ b) + e    
+    
+            # Run the OLS / covariance estimations:
+            ols_betas[i], covariances[i] = get_ols_and_covariance_estimators(X_i=X_mat, y_i=y_vector, N=vec_len)
 
-        # Store OLS coefficients in a list:
-        ols_coeffs_list = [_ for _ in ols_model_w10.fit().params]
-
-        # Calculate the covariance estimate of the OLS parameters:
-        cov_est = np.cov(np.array(ols_coeffs_list))
-
-        return [ols_coeffs_list, cov_est]
-    return
+        return ols_betas, covariances
+    return (run_monte_carlo_OLS_simulation,)
 
 
 @app.cell
 def _(mo):
     mo.md(r"""
-    ### Part (a)
+    ### Parts (a) - (b)
     """)
     return
 
@@ -271,22 +291,134 @@ def _(mo):
 @app.cell
 def _(mo):
     # Set vector length:
-    N_input = mo.ui.number(value=5, start=1, stop=100000, step=1)
-    N_input
-    return (N_input,)
+    N_input = mo.ui.number(value=3, start=1, stop=100000, step=1, label='Vector Length:')
+    num_trials = mo.ui.number(value=10000, start=0, stop=1000000, step=1000, label='Number of Monte-Carlo Trials:')
+    error_dist_type = mo.ui.dropdown(options=['Normal', 'Logistic'], value='Normal', label='e Dist. Type:')
+    mo.hstack([N_input, num_trials])
+    return N_input, error_dist_type, num_trials
 
 
 @app.cell
-def _(N_input, np):
-    # Monte carlo trials:
-    N = N_input.value
-    e = np.random.standard_normal(N)
-    # e = np.array([-0.51316885, -1.80754049, -1.12065741,  0.45416927,  0.90478367]) # hard-coded for testing
-    ones = np.array([1 for _ in range(N)])
-    mat = np.array(np.array([ones, e])).T
-    b = np.array([1,2]).T
-    y_vector = (mat @ b) + e
-    y_vector
+def _(N_input, num_trials, run_monte_carlo_OLS_simulation):
+    # Run the simulation with the inputs:
+    results = run_monte_carlo_OLS_simulation(vec_len=N_input.value, trials=num_trials.value)[0]
+    return (results,)
+
+
+@app.cell
+def _():
+    beta_one = r"$\hat{\boldsymbol{\beta_{1}}}$"
+    return (beta_one,)
+
+
+@app.cell
+def _(beta_one, mo, num_trials):
+    mo.md(f"""
+    Histogram of {beta_one} over the {num_trials.value} trials:
+    """)
+    return
+
+
+@app.cell
+def _(results, so):
+    # Histogram of B1 over the trials:
+    so.histplot(results)
+    return
+
+
+@app.cell
+def _(results):
+    # Calculate the % of observations within beta that were >0:
+    perc_over_zero = results[results > 0].shape[0] / results.shape[0]
+    return (perc_over_zero,)
+
+
+@app.cell(hide_code=True)
+def _(mo, perc_over_zero, results):
+    mo.md(f"""
+    The variance of the estimates was {round(results.var(), 3)} compared to their mean of {round(results.mean(), 3)}. This high variance relative to the mean suggests a poor estimator.
+
+    {perc_over_zero*100:.1f}% of the estimates were greater than 0.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Parts (c) - (d)
+    """)
+    return
+
+
+@app.cell
+def _(error_dist_type):
+    error_dist_type
+    return
+
+
+@app.cell
+def _(
+    error_dist_type,
+    np,
+    num_trials,
+    plt,
+    run_monte_carlo_OLS_simulation,
+    scipy_stats,
+):
+    # Plot formatting stuff:
+    fig, ax = plt.subplots(figsize=(10, 6))
+    vec_lengths = [5, 10, 100, 1000, 10000]
+    colors = plt.cm.viridis(np.linspace(0.2, 0.9, len(vec_lengths)))
+
+    # Run the simulations with increasing vector lengths:
+    for length, color in zip(vec_lengths, colors):
+
+        # Run the simulation and store the betas in an array:
+        mc_betas, mc_covs = run_monte_carlo_OLS_simulation(
+            vec_len=length, 
+            trials=num_trials.value,
+            e_dist_type=error_dist_type.value
+        )
+
+        # Calculate the t-statistics for betas associated with the current vector length N:
+        t_stats = (mc_betas - 2) / np.sqrt(mc_covs) # since 2 is the true value, we use it in this formula
+
+        # Do the t-test based on 5% alpha:
+        critical_value = scipy_stats.t.ppf(0.975, df=length - 2)
+
+        # Calculate the frequency with which we reject the null:
+        rejection_rate = (np.abs(t_stats) > critical_value).mean()
+
+        # Create one layer of the histogram:
+        ax.hist(
+            mc_betas,
+            bins=50,
+            alpha=0.5,
+            color=color,
+            label=f'N = {length} (Mean = {mc_betas.mean():.3f}, Variance = {mc_betas.var():.3f}, Est. Variance: {mc_covs.mean():.3f}), Rejection Rate: {rejection_rate*100:.1f}%',
+            density=True
+        )
+
+    # Final plot formatting after layering is complete:
+    ax.axvline(x=2, color='red', linestyle='--', linewidth=1.5, label=r'True Value of 2.0')
+    ax.set_xlabel(r'$\hat{\beta}_1$')
+    ax.set_ylabel('Density')
+    ax.set_title(r'Distribution of OLS Coefficient by Sample Size (Monte Carlo OLS)')
+    ax.legend()
+    ax
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    I can see that as I increase the size of the dataset, the distribution gets narrower (variance decreases towards zero) and the mean of the estimator gets extremely close to the true value of 2. We can see that both the mean and variance converge to their true values as we increase sample size, which is exactly what we talked about theoretically happening with the central limit theorem.
+
+    As N increases, there is no apparent change in the rejection rate of the null hypothesis (that beta = 2), which varies between 4-6%. This means that the t-statistic is not actually related to the sample size N since the estimator itself and its standard error change in proportion with N.
+
+    When I switch to a logistic distribution for the random error vector, the results change very little. The rejection rates are slightly higher with lower values of N, but otherwise there is little change. This shows how OLS does not require normally distributed errors, only that those errors not be endogeneous to the system (a.k.a. related to the independent variable X). Since X and e are still generated randomly and independently even after the distribution change, the OLS estimator still converges in probability to the true value.
+    """)
     return
 
 
