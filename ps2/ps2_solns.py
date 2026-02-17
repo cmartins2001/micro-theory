@@ -5,6 +5,16 @@ app = marimo.App(width="medium")
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""
+    # Advanced Applied Econometrics Problem Set 2
+
+    *Connor Martins -- 2/12/2026*
+    """)
+    return
+
+
+@app.cell
 def _():
     import marimo as mo
     import pandas as pd
@@ -90,7 +100,7 @@ def _(mo):
     mo.md(r"""
     Based on the scatterplot, there seems to be some evidence of a positive, linear relationship between wage and schooling.
 
-    I don't exogeneity necessarily hold; we know that unobservable factors certainly affect wage, confounding the simple OLS model in question and introducing endogeneity. There is most likely an unobservable attribute of people in the dataset, such as an innate ability to make money, that is related to both X and Y, meaning that the error term of the OLS model will certainly be related
+    I don't thinl exogeneity necessarily holds; we know that unobservable factors certainly affect wage, confounding the simple OLS model in question and introducing endogeneity. There is most likely an unobservable attribute of people in the dataset, such as an innate ability to make money, that is related to both X and Y, meaning that the error term of the OLS model will certainly be related
 
     Heteroskedasticity is likely an issue here. Without knowing more about the dataset, it's certainly possible that certain groups within the data have similar underlying characteristics that produce different variances in the independent variable, schooling, causing heteroskedasticity to be a problem.
     """)
@@ -221,7 +231,7 @@ def _(mo):
 @app.cell
 def _(mo):
     mo.md(r"""
-    ### Part (a)
+    ### Parts (a) - (b)
     """)
     return
 
@@ -232,9 +242,10 @@ def _():
     x_i_la = r"$\boldsymbol{x_i}$"
     y_i_la = r"$\boldsymbol{y_i}$"
     z_i_la = r"$\boldsymbol{z_i}$"
+    v_i_la = r"$\boldsymbol{v_i}$"
     eps_i_la = r"$\boldsymbol{{\epsilon}_i}$"
     exp_la = r"$\boldsymbol{E}$"
-    exp_cond = r"$\boldsymbol{E[\boldsymbol{y_i}|\boldsymbol{x_i}, \boldsymbol{{\epsilon}_i}]}$"
+    exp_cond = r"$\boldsymbol{E[\boldsymbol{y_i}|\boldsymbol{x_i}, \boldsymbol{z_i}]}$"
     y_formula = r"$3 + \boldsymbol{x_i} + \boldsymbol{{x_i}^3} + \boldsymbol{E[\boldsymbol{{\epsilon}_i}|\boldsymbol{x_i}, \boldsymbol{z_i}]}$"
     eps_exp = r"$\boldsymbol{E[\boldsymbol{{\epsilon}_i}|\boldsymbol{x_i}, \boldsymbol{z_i}]} = 0$"
     y_formula_reduced = r"$3 + \boldsymbol{x_i} + \boldsymbol{{x_i}^3}$"
@@ -242,10 +253,12 @@ def _():
         eps_exp,
         eps_i_la,
         exp_cond,
+        v_i_la,
         x_i_la,
         y_formula,
         y_formula_reduced,
         y_i_la,
+        z_i_la,
     )
 
 
@@ -255,10 +268,12 @@ def _(
     eps_i_la,
     exp_cond,
     mo,
+    v_i_la,
     x_i_la,
     y_formula,
     y_formula_reduced,
     y_i_la,
+    z_i_la,
 ):
     mo.md(f"""
     Given that {x_i_la} is independent of {eps_i_la}, we see that, plugging in the equation for {y_i_la}:
@@ -267,16 +282,72 @@ def _(
 
     But we know that {eps_exp}, so we simply have:
 
-    {y_formula_reduced}
+    {exp_cond} = {y_formula_reduced}
 
+    This expectation indicates that, since {z_i_la} is merely a function of the size of {x_i_la} added to random noise ({v_i_la}), the expectation of {y_i_la} is not dependent on {z_i_la}. Regardless of the value of {z_i_la}, the conditional expectation of {y_i_la} will be equal to zero, and therefore the causal effect is also zero.
     """)
     return
 
 
+@app.cell
+def _(np, stats):
+    # Generate samples of estimates based on the parameters in the problem:
+    vec_len_sample = 1000
+    X_sample = np.random.standard_normal(vec_len_sample)
+    eps_vector = np.random.standard_normal(vec_len_sample)
+    X_sample_cubed = X_sample ** 3
+    y_sample = np.ones(vec_len_sample)*3 + X_sample + X_sample_cubed + eps_vector
+
+    # Construct z:
+    v = np.random.normal(loc=0, scale=0.25, size=vec_len_sample)
+    theta = 0.674
+    z = ((X_sample + v) > theta).astype(int) # dummy for whether x+z exceeds the 75th perc. of a normal distribution
+    # z
+
+    # Regress y on z:
+    y_on_z_ols = stats.OLS(
+        endog=y_sample,
+        exog=stats.add_constant(z)
+    )
+
+    # Check results:
+    y_on_z_beta = y_on_z_ols.fit().params[1]
+    return X_sample, X_sample_cubed, vec_len_sample, y_on_z_beta, y_sample, z
+
+
 @app.cell(hide_code=True)
+def _(mo, x_i_la, y_i_la, y_on_z_beta, y_sample, z_i_la):
+    mo.md(f"""
+    When I estimate the OLS of {y_i_la} on {z_i_la} alone (with an added constant), I find an OLS coefficient on {z_i_la} of {round(y_on_z_beta, 3)}, which is very large considering that {y_i_la} had a sample mean of {round(y_sample.mean(), 3)}. While this might seem like a contradiction to the preivous part, which showed a zero-causal impact between these to variables, it should be clear that this is omitted variable bias at work, given that we are clearly seeing the influence of the omitted variable, {x_i_la} in the coefficient on{z_i_la}.
+    """)
+    return
+
+
+@app.cell
 def _(mo):
     mo.md(r"""
-    #
+    ### Part (c)
+    """)
+    return
+
+
+@app.cell
+def _(X_sample, X_sample_cubed, np, stats, vec_len_sample, y_sample, z):
+    # Regress y on x and z:
+    X_sample_mat = np.column_stack([(np.ones(vec_len_sample)), X_sample, X_sample_cubed, z])
+    y_on_all_ols = stats.OLS(
+        endog=y_sample,
+        exog=X_sample_mat
+    )
+    new_y_on_z_beta = y_on_all_ols.fit().params[3]
+    new_y_on_z_beta
+    return (new_y_on_z_beta,)
+
+
+@app.cell
+def _(mo, new_y_on_z_beta, y_i_la, z_i_la):
+    mo.md(f"""
+    After including all of the variables in the regression, the coefficient on z fell to just {round(new_y_on_z_beta,3)}, showing how including the previously omitted variable reveals the zero impact that {z_i_la} actually has on {y_i_la}. This shows a limitation of best linear predictors--without careful consideration for endogeneity issues, even satisfying the best linear predictor conditions can lead to serious issues in inference.
     """)
     return
 
