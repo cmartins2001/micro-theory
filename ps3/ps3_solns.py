@@ -19,7 +19,8 @@ def _():
     import marimo as mo
     import pandas as pd
     import numpy as np
-    return (mo,)
+    import statsmodels.api as stats
+    return mo, pd, stats
 
 
 @app.cell
@@ -41,6 +42,92 @@ def _(mo):
 
     The 2SLS approach, even if less accurate, will account for the effects that supply shocks like production costs have on price through the supply model. The intuition behind this is that higher production costs typically push supply down, raising price if demand remains constant. This relationship is captured by the first stage of the 2SLS procudure, which involves regressing price on the supply shock variable. From there, we use the predicted values of price based on production costs as our "independent" (despite that price is technically endogeneous to the system) variable in the second stage, which predicts quantity demanded. This simple procedure captures the dynamics of both of the underlying models in question, addressing endogeneity in a way that the basic OLS model does not.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Question 2:
+    """)
+    return
+
+
+@app.cell
+def _(pd):
+    # Load RAW wage data:
+    raw = pd.read_csv('CARD.raw', delim_whitespace=True, header=None)
+    raw
+    return (raw,)
+
+
+@app.cell
+def _(raw):
+    # Parse and create a list of the column names:
+    cols_raw = "id nearc2 nearc4 educ age fatheduc motheduc weight momdad14 sinmom14 step14 reg661 reg662 reg663 reg664 reg665 reg666 reg667 reg668 reg669 south66 black smsa south smsa66 wage enroll KWW IQ married libcrd14 exper lwage expersq"
+    cols_fmtd = [_ for _ in cols_raw.split(" ")]
+
+    # Set the formatted column names to be the column names of the df:
+    raw.columns = cols_fmtd
+    raw
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Part (a)
+
+    *The below is the OLS regression output when using robust standard errors:*
+    """)
+    return
+
+
+@app.cell
+def _(raw, stats):
+    # Create the df of exogeneous variables:
+    exog = raw[[
+        'educ', 'exper', 'expersq', 'black',
+        'south', 'smsa', 'reg661', 'reg662', 
+        'reg663', 'reg664', 'reg665', 'reg666',
+        'reg667', 'reg668', 'smsa66'
+    ]]
+
+    # Regress log wage on the exogenous variables:
+    lwage_ols_model = stats.OLS(
+        endog=raw['lwage'],
+        exog=stats.add_constant(exog),
+    )
+
+    # Estimate results with HC-robust and non-roust SEs:
+    _non_robust = lwage_ols_model.fit() #.summary()
+    _robust = lwage_ols_model.fit(cov_type='HC0') #.summary()
+
+    # Display output:
+    _robust.summary()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    There is no difference between the statistical significance of any of the regression coefficients across the standard error techniques. Using heteroskedasticity-robust standard errors did not lower the p-value of any coefficient such that the null hypothesis could no longer be rejected. The only two variables with insignificant coeffcients were the region dummies for regions 2-6 and the `smsa66` variable, which were also insignificant without using robust standard errors.
+
+    If there were changes to the statistical significance of any of these coefficients, it would be wise to use the robust standard errors in order to account for endogeneity. In this case, choosing between techniques is largely arbitrary.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Part (b)
+    """)
+    return
+
+
+@app.cell
+def _():
     return
 
 
