@@ -100,12 +100,12 @@ def _(raw, stats):
     )
 
     # Estimate results with HC-robust and non-roust SEs:
-    _non_robust = lwage_ols_model.fit() #.summary()
-    _robust = lwage_ols_model.fit(cov_type='HC0') #.summary()
+    _non_robust = lwage_ols_model.fit()
+    _robust = lwage_ols_model.fit(cov_type='HC0')
 
     # Display output:
     _robust.summary()
-    return
+    return (exog,)
 
 
 @app.cell
@@ -127,7 +127,32 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(exog, raw, stats):
+    # Prepare a new exogeneous df without education and with nearc4 (proximity to 4-yr college):
+    exog_reduced = exog.drop(columns=['educ']).assign(nearc4=raw['nearc4'])
+
+    # Regress education on the rest of the exogeneous variables from the previous model:
+    educ_reduced_model = stats.OLS(
+        endog=raw['educ'],
+        exog=stats.add_constant(exog_reduced),
+    )
+
+    # Fit with and without robust standard errors:
+    _non_robust = educ_reduced_model.fit()
+    _robust = educ_reduced_model.fit(cov_type='HC0')
+    non_robust_nearc4_beta = _non_robust.params.loc['nearc4']
+    robust_nearc4_beta = _robust.params.loc['nearc4']
+
+    # Display regression output:
+    _robust.summary()
+    return non_robust_nearc4_beta, robust_nearc4_beta
+
+
+@app.cell(hide_code=True)
+def _(mo, non_robust_nearc4_beta, robust_nearc4_beta):
+    mo.md(f"""
+    When regressing years of education on the rest of the exogeneous variables from (a) and the `nearc4` variable, there is evidence of a statistically significant relationship between a person's proximity to a 4-year school and the years of education they achieved. The coefficient without robust standard errors was {round(non_robust_nearc4_beta, 4)} and with robust standard errors it was {round(robust_nearc4_beta, 4)}--identical results. Both coefficients were statistically significant at all levels with a p-value of 0.000, suggesting no difference in inference across standard error calculation type.
+    """)
     return
 
 
