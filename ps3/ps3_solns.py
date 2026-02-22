@@ -9,7 +9,7 @@ def _(mo):
     mo.md(r"""
     # Advanced Applied Econometrics Problem Set 3
 
-    *Connor Martins -- 2/16/2026*
+    *Connor Martins -- 2/19/2026*
     """)
     return
 
@@ -361,7 +361,326 @@ def _(stats, subset):
 @app.cell(hide_code=True)
 def _(iq_nearc4_control_beta, mo):
     mo.md(f"""
-    After introducing regional controls and a dummy for whether the man lived in a standard metro statistical area, the statistical significance of the coefficient on IQ was eliminated--the coefficient fell to {round(iq_nearc4_control_beta, 4)} and it had a p-value of .291. From this regression we can infer that there are region-level differences that influence IQ that were interfering in the relationship between IQ and location explored in (e). In other words, there is endogeneity in the regression of IQ on proximity to schools.  
+    After introducing regional controls and a dummy for whether the man lived in a standard metro statistical area, the statistical significance of the coefficient on IQ was eliminated--the coefficient fell to {round(iq_nearc4_control_beta, 4)} and it had a p-value of .291. From this regression we can infer that there are region-level differences that influence IQ that were interfering in the relationship between IQ and location explored in (e). In other words, there is endogeneity in the regression of IQ on proximity to schools.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Question 3:
+    """)
+    return
+
+
+@app.cell
+def _():
+    # Latex symbols:
+    xi_la = r"$\boldsymbol{x_i}$"
+    yi_la = r"$\boldsymbol{y_i}$"
+    zi_la = r"$\boldsymbol{z_i}$"
+    vi_la = r"$\boldsymbol{v_i}$"
+    exp_uv = r"$\boldsymbol{E[\boldsymbol{u_i}|\boldsymbol{v_i}]}$"
+    beta_la = r"$\boldsymbol{\beta}$"
+    return beta_la, exp_uv, xi_la
+
+
+@app.cell
+def _(beta_la, exp_uv, mo):
+    mo.md(f"""
+    Part (a)
+
+    Note that {exp_uv} = 0.9 and {beta_la} = 1.
+    """)
+    return
+
+
+@app.cell
+def _(np):
+    # Prepare a custom function which returns an OLS estimator:
+    def get_ols_and_covariance_estimators(X_i, y_i, N):
+
+        # Create the OLS formula terms using numpy:
+        XtX_inv = np.linalg.inv(X_i.T @ X_i)
+        b_hat = XtX_inv @ X_i.T @ y_i
+        resid = y_i - X_i @ b_hat
+        s2 = (resid @ resid) / (N - 2)
+        cov_est = s2 * XtX_inv[1, 1]
+        return b_hat[1], cov_est
+
+
+    def run_monte_carlo_OLS_IV_simulation(vec_len : int, trials : int, pi_val = int):
+
+        # Initialize list of model coefficients:
+        first_stage_t_stats = np.zeros(trials)
+        ols_betas = np.zeros(trials)
+        covariances = np.zeros(trials)
+        sec_stage_t_stats = np.zeros(trials)
+
+        # Create covariance matrix of  ui and vi according to the problem assumption:
+        u_v_cov_mat = np.array([
+            [1, 0.9],
+            [0.9, 1]
+        ])
+
+        # Run the simulations:
+        for i in range(trials):
+
+            # Create random ui and vi vectors from their multivariate distribution:
+            ui_vi_matrix = np.random.multivariate_normal(mean=[0, 0], cov=u_v_cov_mat, size=vec_len)
+            ui, vi = ui_vi_matrix[:, 0], ui_vi_matrix[:, 1]
+
+            # First, use zi and pi to generate xi:
+            zi = np.random.standard_normal(vec_len)
+            pi_vec = np.ones(vec_len) * pi_val
+            xi = (zi * pi_vec) + vi
+
+            # Now, run the first stage regression: regress x on z to recover pi:
+            ones = np.ones(vec_len) # intercept column of Z
+            Z_mat = np.column_stack([ones, zi])
+            ZtZ_inv = np.linalg.inv(Z_mat.T @ Z_mat)
+            pi_hat = ZtZ_inv @ Z_mat.T @ xi # here's where we estimate pi hat
+
+            # Estimate covariance from the first stage regression to calculate t-stat:
+            pi_var = get_ols_and_covariance_estimators(
+                X_i=Z_mat, 
+                y_i=xi, 
+                N=vec_len
+            )[1]
+            first_stage_t_stats[i] = pi_hat[1] / np.sqrt(pi_var)
+
+            # Calculate x hat using pi hat:
+            xi_hat = Z_mat @ pi_hat # predict xi from pi hat
+
+            # Now, run the second stage: regress y on x hat:
+            yi = xi + ui # this assumes Beta = 1
+            X_hat_mat = np.column_stack([ones, xi_hat])
+            sec_stage_beta, sec_stage_var = get_ols_and_covariance_estimators(X_i=X_hat_mat, y_i=yi, N=vec_len)
+            sec_stage_t_stat = sec_stage_beta / np.sqrt(sec_stage_var) # t-stat for the 2nd stage coefficient
+            ols_betas[i], covariances[i], sec_stage_t_stats[i] = sec_stage_beta, sec_stage_var, sec_stage_t_stat
+
+        return ols_betas, covariances, first_stage_t_stats, sec_stage_t_stats
+
+
+    #### SIMULATION EXERCISE:
+
+    # Establish testing levels of pi:
+    pis = [0, .25, 1, 2]
+
+    # Set numer of observations:
+    n_obs = 100
+
+    # Simulate 1,000 times (vectorized) over each value of pi:
+    betas = []
+    covs = []
+    first_stage_t_stats = []
+    rejection_rates = []
+    for pi in pis:
+
+        # Conduct 1,000 trials with the in-loop level of pi:
+        pi_betas, pi_covs, pi_t_stats, sec_t_stats = run_monte_carlo_OLS_IV_simulation(trials=1000, vec_len=n_obs, pi_val=pi)
+        betas.append(pi_betas)
+        first_stage_t_stats.append(pi_t_stats)
+
+        # Calc the null hypothesis rejection rate based on the t-statistic from the first stage:
+        pi_rejection_rate = (np.abs(pi_t_stats) > 1.96).mean()
+        rejection_rates.append(pi_rejection_rate)
+    return (
+        betas,
+        first_stage_t_stats,
+        n_obs,
+        pis,
+        rejection_rates,
+        run_monte_carlo_OLS_IV_simulation,
+    )
+
+
+@app.cell
+def _(first_stage_t_stats, pis):
+    # Compare distributions of first stage t-stats visually:
+    import matplotlib.pyplot as plt
+
+    # Loop over the different values of pi and plot the distributions of the first stage regression t-stat:
+    fig, axes = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
+    for idx, (ax, _pi, t_stats) in enumerate(zip(axes, pis, first_stage_t_stats)):
+        ax.hist(t_stats, bins=40, edgecolor='black', alpha=0.7)
+        ax.set_title(f'π = {_pi}')
+        ax.set_xlabel('t-statistic')
+        ax.axvline(x=1.96, color='red', linestyle='--', label='±1.96')
+        ax.axvline(x=-1.96, color='red', linestyle='--')
+        if idx == 0:
+            ax.set_ylabel('Frequency')
+
+    fig.suptitle('First Stage t-statistic Distributions by π', fontsize=14)
+    plt.tight_layout()
+    ax
+    return (plt,)
+
+
+@app.cell(hide_code=True)
+def _(mo, rejection_rates):
+    mo.md(f"""
+    From the above plot, we can see that as we increase pi, the distribution of t-statistics of the first-stage regression shifts away from zero, which is what we want because this indicates a strengthening of the relevance condition. The rejection rate goes from {rejection_rates[0]*100:.2f}% at pi = 0 to {rejection_rates[3]*100:.2f}% with pi = 2, indicating that the higher pi is, the better instrument it is. The more different that the first stage estimator is from zero, the more related our regressor is to the instrument, and the better our second stage regressionn will perform.
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Part (b)
+    """)
+    return
+
+
+@app.cell
+def _(betas, np, pis, plt):
+    # Loop over the different values of pi and plot the distributions of the IV estimator:
+    _fig, _axes = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
+    for _idx, (_ax, _pi, iv_betas) in enumerate(zip(_axes, pis, betas)):
+        _sim_beta_mean = round(iv_betas.mean(), 2)
+        _sim_beta_median = round(np.median(iv_betas), 2)
+        _ax.hist(iv_betas, bins=40, edgecolor='black', alpha=0.7)
+        _ax.set_title(f'π = {_pi}; (Mean = {_sim_beta_mean}, Median = {_sim_beta_median})')
+        _ax.set_xlabel('t-statistic')
+        _ax.axvline(x=1, color='red', linestyle='--', label='True Value: 1')
+        if _idx == 0:
+            _ax.set_ylabel('Frequency')
+
+    _fig.suptitle(f'IV Estimators Distributions by π', fontsize=14)
+    _ax
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, xi_la):
+    mo.md(f"""
+    As pi increases, the distribution of the IV estimator shifts closer to the true value of 1 and gets narrower, indicating improved accuracy of the IV setup as the IV gets stronger (i.e., more related to {xi_la}). The mean / median value of the estimator gets closer to one as pi increases, while the rejection rate goes to 100%.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Part (c)
+    """)
+    return
+
+
+@app.cell
+def _(n_obs, np, pis, plt, run_monte_carlo_OLS_IV_simulation):
+    # Same monte carlo trial setup, but only include if the t-statistic of the first stage is sufficiently large:
+    _betas = []
+    _covs = []
+    _first_stage_t_stats = []
+    _rejection_rates = []
+    for _pi in pis:
+
+        # Conduct 1,000 trials with the in-loop level of pi:
+        _pi_betas, _pi_covs, _pi_t_stats, _pi_sec_t_stats = run_monte_carlo_OLS_IV_simulation(
+            trials=1000, 
+            vec_len=n_obs, 
+            pi_val=_pi
+        )
+
+        # Create a filter condition based on first stage t-stat value:
+        t_stat_mask = np.abs(_pi_t_stats) > 1.96
+
+        # Append filtered versions of the betas / t-stats: 
+    
+        _betas.append(_pi_betas[t_stat_mask])
+        _first_stage_t_stats.append(_pi_t_stats[t_stat_mask])
+
+        # Calc the null hypothesis rejection rate based on the t-statistic from the SECOND stage:
+        _pi_sec_rejection_rate = (np.abs(_pi_sec_t_stats[t_stat_mask]) > 1.96).mean() # only where first stage t-stat > 1.96
+        _rejection_rates.append(_pi_sec_rejection_rate)
+
+
+    # Loop over the different values of pi and plot the distributions of the IV estimator:
+    _fig, _axes = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
+    for _idx, (_ax, _pi, _iv_betas, _sec_rej_rate) in enumerate(zip(_axes, pis, _betas, _rejection_rates)):
+        _sim_beta_mean = round(_iv_betas.mean(), 2) # mean value of the second stage regressor
+        _sim_beta_median = round(np.median(_iv_betas), 2) # median value of the second stage regressor
+        _ax.hist(_iv_betas, bins=40, edgecolor='black', alpha=0.7)
+        _ax.set_title(f'π = {_pi}; (IV Rej. Rate: {_sec_rej_rate*100:.1f}%)')
+        _ax.set_xlabel('t-statistic')
+        _ax.axvline(x=1, color='red', linestyle='--', label='True Value: 1')
+        if _idx == 0:
+            _ax.set_ylabel('Frequency')
+
+    _fig.suptitle(f'IV Estimators Distributions by π with First Stage T-Stat > 1,96 Condition', fontsize=14)
+    _ax
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, xi_la):
+    mo.md(f"""
+    As shown by the chart above, when only including cases which had a first stage regression meet the relevance IV condition (so the first stage t-stat > 1.96), the distributions of the IV estimators tend to shift away from zero even at smaller levels of pi. This is intuitive as we eliminated trials which produced results that failed to satisfy the relevance condition. We basically artificially strengthened the IV by only selecting instances in which it was most correlated with our {xi_la} term, thus driving improvements in the size of the 5% tests on the IV estimators themselves. This is shown most clearly in the pi = 0 case, when the size of the test on the IV estimator was over 80% despite the poor results we noted at this level in (b). This shows that the relevance condition can actualy bias results because if we run 2SLS purely based on this condition. It could lead us to use a weak IV because the selection bias at play (i.e., only including the instances of strong correlation between the IV and the endogeneous regressor) makes the IV appear stronger than it actually is.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Part (d)
+    """)
+    return
+
+
+@app.cell
+def _(n_obs, np, pis, plt, run_monte_carlo_OLS_IV_simulation):
+    # Same monte carlo trial setup, but only include if the first stage t-stat squared > 10::
+    _betas = []
+    _covs = []
+    _first_stage_t_stats = []
+    _rejection_rates = []
+    for _pi in pis:
+
+        # Conduct 1,000 trials with the in-loop level of pi:
+        _pi_betas, _pi_covs, _pi_t_stats, _pi_sec_t_stats = run_monte_carlo_OLS_IV_simulation(
+            trials=1000, 
+            vec_len=n_obs, 
+            pi_val=_pi
+        )
+
+        # Create a filter condition based on first stage t-stat value:
+        f_stat_mask = np.abs(_pi_t_stats ** 2) > 10
+
+        # Append filtered versions of the betas / t-stats: 
+    
+        _betas.append(_pi_betas[f_stat_mask])
+        _first_stage_t_stats.append(_pi_t_stats[f_stat_mask])
+
+        # Calc the null hypothesis rejection rate based on the t-statistic from the SECOND stage:
+        _pi_sec_rejection_rate = (np.abs(_pi_sec_t_stats[f_stat_mask]) > 1.96).mean() # only where first stage t-stat > 1.96
+        _rejection_rates.append(_pi_sec_rejection_rate)
+
+
+    # Loop over the different values of pi and plot the distributions of the IV estimator:
+    _fig, _axes = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
+    for _idx, (_ax, _pi, _iv_betas, _sec_rej_rate) in enumerate(zip(_axes, pis, _betas, _rejection_rates)):
+        _sim_beta_mean = round(_iv_betas.mean(), 2) # mean value of the second stage regressor
+        _sim_beta_median = round(np.median(_iv_betas), 2) # median value of the second stage regressor
+        _ax.hist(_iv_betas, bins=40, edgecolor='black', alpha=0.7)
+        _ax.set_title(f'π = {_pi}; (IV Rej. Rate: {_sec_rej_rate*100:.1f}%)')
+        _ax.set_xlabel('t-statistic')
+        _ax.axvline(x=1, color='red', linestyle='--', label='True Value: 1')
+        if _idx == 0:
+            _ax.set_ylabel('Frequency')
+
+    _fig.suptitle(f'IV Estimators Distributions by π with First Stage T-Stat > 1,96 Condition', fontsize=14)
+    _ax
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    As shown in the chart above, the F-stat condition improved the power of the tests on the IV estimator, moving the rejection rate to 100% in the pi = 0 group. This exacerbated the selection bias we saw in (c) because only a very small sample of the pi = 0 simulations made it through to the second stage, most of which ended up producing significant IV estimators.
     """)
     return
 
