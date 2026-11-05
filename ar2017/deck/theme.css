@@ -1,0 +1,97 @@
+/* Deck theme: light, clean; ink black, navy, electric green.
+   Data colors (validated, light surface): navy #2a4fa8 (series 1), green #00a35f (series 2).
+   Electric green #2ee88f is an accent for rules, washes and highlights only -- never text or thin lines. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --ink: #0b0b0b;
+  --ink-2: #3d3c39;
+  --muted: #7a7974;
+  --navy: #13254f;
+  --navy-data: #2a4fa8;
+  --green-data: #00a35f;
+  --electric: #2ee88f;
+  --wash: rgba(46, 232, 143, 0.10);
+  --hair: #e4e3dd;
+  --marimo-heading-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --marimo-text-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body, .markdown, .markdown p, .markdown li { color: var(--ink); }
+.markdown { font-size: 1.12rem; line-height: 1.5; }
+.markdown h1 { font-size: 2.15rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15;
+  margin: 0 0 .35rem 0; color: var(--ink); }
+.markdown h2 { font-size: 1.35rem; font-weight: 650; color: var(--navy); margin: .6rem 0 .3rem; }
+.markdown h3 { font-size: 1.05rem; font-weight: 650; color: var(--navy); margin: .4rem 0 .2rem;
+  text-transform: uppercase; letter-spacing: .06em; }
+.markdown strong { font-weight: 650; }
+.markdown ul { margin: .25rem 0 .25rem 1.1rem; }
+.markdown li { margin: .28rem 0; }
+.markdown li::marker { color: var(--navy-data); }
+.markdown code { font-size: .9em; }
+
+/* slide chrome */
+.kicker { display: inline-block; font: 600 .78rem/1 var(--marimo-text-font); letter-spacing: .14em;
+  text-transform: uppercase; color: var(--navy); border-left: 4px solid var(--electric);
+  padding: .15rem 0 .15rem .55rem; margin-bottom: .55rem; }
+.kicker .step { color: var(--muted); margin-left: .6rem; letter-spacing: .08em; }
+.sub { color: var(--ink-2); font-size: 1.12rem; margin: 0 0 .8rem 0; max-width: 62rem; }
+.foot { color: var(--muted); font-size: .78rem; line-height: 1.35; margin-top: .6rem; }
+.muted { color: var(--muted); }
+
+.callout { background: var(--wash); border-left: 4px solid var(--electric); border-radius: 4px;
+  padding: .75rem 1rem; margin: .5rem 0; }
+.callout.navy { background: rgba(42, 79, 168, .06); border-left-color: var(--navy-data); }
+.callout p { margin: 0; }
+.eqcard { border: 1px solid var(--hair); border-radius: 6px; padding: .6rem 1rem; margin: .45rem 0; background: #fff; }
+.eqcard .lab { font: 600 .72rem/1 var(--marimo-text-font); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: .25rem; }
+.hl { background: linear-gradient(transparent 55%, rgba(46, 232, 143, .45) 55%); padding: 0 .1em; }
+
+/* stat tiles */
+.tiles { display: flex; gap: 1.1rem; flex-wrap: wrap; margin: .4rem 0; }
+.tile { border: 1px solid var(--hair); border-radius: 6px; padding: .7rem 1rem; min-width: 11rem; background: #fff; }
+.tile .lab { font-size: .8rem; color: var(--ink-2); }
+.tile .val { font-size: 2.1rem; font-weight: 650; color: var(--navy); line-height: 1.15; }
+.tile .val small { font-size: 1rem; color: var(--muted); font-weight: 500; }
+.tile .note { font-size: .78rem; color: var(--muted); }
+
+/* market-structure diagram */
+.flow { display: flex; align-items: stretch; gap: .6rem; margin: .4rem 0 .2rem; }
+.flow .node { flex: 1; border: 1px solid var(--hair); border-radius: 6px; padding: .7rem .9rem; background: #fff; }
+.flow .node.key { border-top: 4px solid var(--electric); }
+.flow .node h4 { margin: 0 0 .25rem; font-size: 1rem; color: var(--navy); }
+.flow .node p { margin: 0; font-size: .92rem; color: var(--ink-2); line-height: 1.4; }
+.flow .arrow { align-self: center; color: var(--navy-data); font-size: 1.6rem; }
+
+/* data cards (extension) */
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; }
+.card { border: 1px solid var(--hair); border-radius: 6px; padding: .65rem .9rem; background: #fff; }
+.card h4 { margin: 0 0 .2rem; font-size: .95rem; color: var(--navy); }
+.card .from { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(0,0,0,.25); }
+.card .to { font-weight: 650; }
+.card p { margin: .15rem 0 0; font-size: .9rem; color: var(--ink-2); }
+
+/* title slide */
+.title-wrap { padding-top: 3.5rem; }
+.title-wrap .t { font-size: 3.1rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; max-width: 52rem; }
+.title-wrap .t .q { color: var(--navy-data); }
+.title-wrap .a { font-size: 1.25rem; color: var(--ink-2); margin-top: 1rem; }
+.title-wrap .rule { width: 7rem; height: 6px; background: var(--electric); border-radius: 3px; margin: 1.6rem 0 1.2rem; }
+.title-wrap .p { font-size: 1.05rem; color: var(--ink-2); }
+
+/* two-column note blocks for strengths / weaknesses */
+.sw { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+.swcol { border-top: 4px solid var(--navy-data); padding-top: .4rem; }
+.swcol.w { border-top-color: var(--ink); }
+.yours { border: 1px dashed #c9c8c2; border-radius: 6px; color: var(--muted); padding: .5rem .8rem; margin-top: .5rem; font-size: .9rem; }
+
+/* vega embeds: quiet the actions menu, style bound controls */
+.vega-embed summary { opacity: .25; }
+.vega-bindings { font: 500 .9rem var(--marimo-text-font); color: var(--ink-2); margin-top: .35rem;
+  display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; }
+.vega-bind { display: inline-flex; align-items: center; gap: .4rem; }
+.vega-bind-name { font-weight: 600; color: var(--navy); }
+.vega-bind input[type="range"] { accent-color: var(--navy-data); width: 11rem; }
+.vega-bind input[type="radio"], .vega-bind input[type="checkbox"] { accent-color: var(--navy-data); }
+.vega-bind label { margin-right: .5rem; }
