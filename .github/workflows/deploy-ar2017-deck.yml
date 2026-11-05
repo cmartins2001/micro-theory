@@ -1,0 +1,53 @@
+# Publish the AR2017 marimo deck to GitHub Pages.
+# Goes in the repo at: .github/workflows/deploy-ar2017-deck.yml
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions".
+# Result: https://<user>.github.io/<repo>/ar2017/  (the site root is left free for other projects)
+name: Publish AR2017 deck
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ar2017/deck/**"
+      - ".github/workflows/deploy-ar2017-deck.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The deck's data is inlined in deck.py, so no raw data or pipeline run is needed here.
+      - run: pip install "marimo==0.25.2" altair pandas numpy
+      - name: Restore slide layout if an older marimo editor emptied it
+        run: python ar2017/deck/make_layout.py --if-empty
+      - name: Export deck (static HTML; charts stay interactive in the browser)
+        run: |
+          mkdir -p _site/ar2017
+          marimo export html ar2017/deck/deck.py -o _site/ar2017/index.html -f
+          printf '<!doctype html><meta charset="utf-8"><title>Decks</title><a href="ar2017/">Acemoglu &amp; Restrepo (2017) deck</a>\n' > _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}ar2017/
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
