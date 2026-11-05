@@ -1,7 +1,12 @@
 """Write layouts/deck.slides.json: one slide per '# slide: <id>' cell, setup cells skipped, speaker notes attached.
-Run after editing deck.py (cell order changes):  python3 deck/make_layout.py"""
+Run after editing deck.py (cell order changes):  python3 deck/make_layout.py
+
+--if-empty: only write when the layout file is missing or has no cell data. Older marimo editors (e.g. 0.17)
+save the slides layout as {"data": {}}, dropping speaker notes; CI uses this flag to restore them without
+overwriting notes edited in a newer editor."""
 import json
 import re
+import sys
 from pathlib import Path
 
 DECK = Path(__file__).resolve().parent
@@ -71,6 +76,14 @@ NOTES = {
 
 
 def main():
+    target = DECK / "layouts" / "deck.slides.json"
+    if "--if-empty" in sys.argv and target.exists():
+        try:
+            if json.loads(target.read_text()).get("data", {}).get("cells"):
+                print("layout already has cell data; leaving it as is")
+                return
+        except json.JSONDecodeError:
+            pass
     src = (DECK / "deck.py").read_text()
     cells = re.split(r"\n@app\.cell", src)[1:]
     out = []
