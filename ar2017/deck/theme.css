@@ -58,10 +58,10 @@ body, .markdown, .markdown p, .markdown li { color: var(--ink); }
 
 /* market-structure diagram */
 .flow { display: flex; align-items: stretch; gap: .6rem; margin: .4rem 0 .2rem; }
-.flow .node { flex: 1; border: 1px solid var(--hair); border-radius: 6px; padding: .7rem .9rem; background: #fff; }
+.flow .node { flex: 1; border: 1px solid var(--hair); border-radius: 6px; padding: 1rem 1.15rem; background: #fff; }
 .flow .node.key { border-top: 4px solid var(--electric); }
-.flow .node h4 { margin: 0 0 .25rem; font-size: 1rem; color: var(--navy); }
-.flow .node p { margin: 0; font-size: .92rem; color: var(--ink-2); line-height: 1.4; }
+.flow .node h4 { margin: 0 0 .4rem; font-size: 1.3rem; color: var(--navy); }
+.flow .node p { margin: 0; font-size: 1.15rem; color: var(--ink-2); line-height: 1.45; }
 .flow .arrow { align-self: center; color: var(--navy-data); font-size: 1.6rem; }
 
 /* data cards (extension) */
@@ -95,3 +95,7 @@ body, .markdown, .markdown p, .markdown li { color: var(--ink); }
 .vega-bind input[type="range"] { accent-color: var(--navy-data); width: 11rem; }
 .vega-bind input[type="radio"], .vega-bind input[type="checkbox"] { accent-color: var(--navy-data); }
 .vega-bind label { margin-right: .5rem; }
+
+/* centered single-column layout (theory slide 5) */
+.narrow { max-width: 62rem; margin: 0 auto; }
+.narrow .eqcard { text-align: center; }

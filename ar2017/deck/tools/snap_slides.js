@@ -2,7 +2,7 @@
 // Usage: node snap_slides.js http://localhost:2719 OUTDIR [N=19]
 const { chromium } = require('playwright');
 (async () => {
-  const [,, url, out, n = '19'] = process.argv;
+  const [,, url, out, n = "18"] = process.argv;
   const opts = process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } } : {};
   const b = await chromium.launch(opts);
   const p = await (await b.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 2 })).newPage();

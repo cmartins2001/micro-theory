@@ -1,6 +1,6 @@
 # Slide deck: Acemoglu & Restrepo (2017)
 
-A marimo notebook in slides layout: 19 slides, about 20–25 minutes. Every number comes from the validated pipeline in `../results/`; nothing is estimated live.
+A marimo notebook in slides layout: 18 slides, about 20–25 minutes. Every number comes from the validated pipeline in `../results/`; nothing is estimated live.
 
 ## Present
 ```bash
@@ -32,7 +32,7 @@ marimo export pdf deck/deck.py -o deck/deck.pdf --as=slides --raster-server live
 ```
 or screenshot the running deck, which is how `deck_slides.pdf` was made:
 ```bash
-node deck/tools/snap_slides.js http://localhost:2718 OUTDIR 19
+node deck/tools/snap_slides.js http://localhost:2718 OUTDIR 18
 ```
 
 ## Files
@@ -47,6 +47,6 @@ node deck/tools/snap_slides.js http://localhost:2718 OUTDIR 19
 ## Content choices to review
 - **Thesis wording (slide 2):** capital-rich economies gain more from each automated task. The model's cost of automating, C(θ), does not depend on K.
 - **Analogy (slide 3):** one tool company sells to many builders and chooses how many steps its tools can do on their own (θ).
-- **Theory slides 4–8** use an illustrative calibration: K = 3, L = 1, ηχ = 0.3, C(θ) = 0.05(−θ − ln(1−θ)). The paper picks no functional form.
-- **θ > 0.8 bound (slide 9)** is our derivation, not the paper's. The proof is in the speaker notes.
-- **The interaction (moderator) test is left out** by request. It appears only as a weakness bullet on slide 18.
+- **Theory slides 8–9 (steps 6–7)** use an illustrative calibration: K = 3, L = 1, ηχ = 0.3, C(θ) = 0.05(−θ − ln(1−θ)). The paper picks no functional form.
+- **θ > 0.8 bound** is our derivation, not the paper's. It now appears only as a weakness bullet (slide 17); the proof stays in the slide 9 speaker notes.
+- **The interaction (moderator) test is left out** by request. It appears only as a weakness bullet on slide 17.

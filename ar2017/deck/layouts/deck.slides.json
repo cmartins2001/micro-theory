@@ -88,11 +88,6 @@
    },
    {
     "type": "slide",
-    "speakerNotes": "Wald: the paper's method. AR (6 instruments): when J is near rejection, the set can be narrower than Wald; it once excluded zero for the OECD. AR (1 instrument = mean birthrate): pure test of β; every new-data OECD set includes zero. Panel C col 8 (not shown) gives empty 6-instrument AR sets even in the original data: the instruments disagree.",
-    "showCode": false
-   },
-   {
-    "type": "slide",
     "speakerNotes": "The OECD single-instrument point estimates stay around 1.0–1.5: the result loses precision, not size. Full sample 2023: single-instrument AR set [−0.10, 2.89] (original IVs), [−0.04, 2.70] (shifted). Not shown (by choice): moderator tests also find the positive association concentrated in capital-poor countries.",
     "showCode": false
    },

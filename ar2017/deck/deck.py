@@ -189,8 +189,7 @@ def _(box, head, mo, slide):
     tools can do on their own** without a worker. That share of steps is θ. Automating more steps costs
     the tool company more, and harder steps cost disproportionately more.""")
     slide(
-        head("Theory", "Who produces what", step="1 / 7",
-             sub="An intermediate good is an input that is used up in making something else. Here every task needs one, and a single firm supplies them all."),
+        head("Theory", "Who produces what", step="1 / 7"),
         _flow, _analogy,
         mo.md("The monopolist's two choices, the price of *q(i)* and the automation frontier θ, drive everything that follows."),
     )
@@ -320,54 +319,32 @@ def _(GREEN, INK, INK2, NAVY, alt, box, cols, head, mo, pd, slide):
 
 
 @app.cell(hide_code=True)
-def _(GREEN, INK, NAVY, alt, box, cols, foot, head, mo, np, pd, slide):
+def _(box, foot, head, mo, slide):
     # slide: theory-5 monopolist's problem
-    _K, _A, _cc = 3.0, 0.3, 0.05
-    _t = np.round(np.arange(0.01, 0.951, 0.005), 3)
-    _C = _cc * (-_t - np.log(1 - _t))
-    _lnY = _t * np.log(_K / _t) + (1 - _t) * np.log(1.0 / (1 - _t))
-    _G = np.log(_A - _C)
-    _f = pd.DataFrame({"theta": _t, "lnY": _lnY, "G": _G, "obj": _lnY + _G})
-    _dom = ["Output side: ln Y(θ)", "Profit-margin side: Γ(θ) = ln(ηχ − C(θ))", "Objective: ln Y(θ) + Γ(θ)"]
-    _long = _f.melt("theta", var_name="key", value_name="v")
-    _long["part"] = _long.key.map(dict(zip(["lnY", "G", "obj"], _dom)))
-    _hov = alt.selection_point(name="hm", fields=["theta"], nearest=True, on="pointerover", clear="pointerout", empty=False)
-    _x = alt.X("theta:Q", title="θ, share of tasks automated", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(values=[0, 0.25, 0.5, 0.75, 1], format=".2f"))
-    _lines = alt.Chart(_long).mark_line().encode(
-        x=_x, y=alt.Y("v:Q", title="Log units", scale=alt.Scale(domain=[-2.2, 1.6], clamp=True)),
-        color=alt.Color("part:N", scale=alt.Scale(domain=_dom, range=[NAVY, GREEN, INK]),
-                        legend=alt.Legend(title=None, orient="bottom", direction="vertical", labelLimit=400)),
-        strokeWidth=alt.condition(alt.datum.part == _dom[2], alt.value(3), alt.value(2)))
-    _i = int(np.argmax(_lnY + _G))
-    _opt = pd.DataFrame({"theta": [_t[_i]], "v": [(_lnY + _G)[_i]], "lab": [f"θ* = {_t[_i]:.2f}"]})
-    _optr = alt.Chart(_opt).mark_rule(color=INK, strokeDash=[2, 3]).encode(x="theta:Q")
-    _optp = alt.Chart(_opt).mark_point(filled=True, size=110, color=INK, stroke="white", strokeWidth=2).encode(x="theta:Q", y="v:Q")
-    _optt = alt.Chart(_opt).mark_text(dy=-16, fontWeight=700, fontSize=13.5, color=INK).encode(x="theta:Q", y="v:Q", text="lab:N")
-    _rule = alt.Chart(_f).mark_rule(color="#9a9993").encode(
-        x="theta:Q", opacity=alt.condition(_hov, alt.value(1), alt.value(0)),
-        tooltip=[alt.Tooltip("theta:Q", title="θ", format=".2f"), alt.Tooltip("lnY:Q", title="ln Y(θ)", format=".3f"),
-                 alt.Tooltip("G:Q", title="Γ(θ)", format=".3f"), alt.Tooltip("obj:Q", title="Objective", format=".3f")]
-    ).add_params(_hov)
-    _chart = alt.layer(_lines, _optr, _optp, _optt, _rule).properties(width=560, height=330)
     _prob = box(r"""
     $$\max_{\theta\in[0,1]}\;\; \underbrace{\theta\ln\frac{K}{\theta} + (1-\theta)\ln\frac{L}{1-\theta}}_{\ln Y(\theta):\ \text{size of the pie}} \;+\; \underbrace{\ln\big(\eta\chi - C(\theta)\big)}_{\Gamma(\theta):\ \text{its slice, net of costs}}$$
     """, "eqcard", "The monopolist's problem (in logs)")
     _eq = mo.md(r"""
-
     - **Revenue.** Spending on intermediates is a share η of output, and a fraction χ of that is markup,
       so profit before automation costs is **ηχ·Y**. The firm earns a cut of total output.
     - **Cost.** Automation costs **C(θ)·Y**. Net profit is (ηχ − C(θ))·Y.
-    - **Trade-off.** More automation grows the pie, ln Y(θ) rises under (4), but shrinks the margin:
-      Γ(θ) falls, faster and faster.
-
-    <div class="callout navy"><p><b>Key point:</b> the monopolist maximizes <i>profit</i>, not output. It stops
-    while ∂ln Y/∂θ is still positive. So the monopolist stops before the marginal product of automation is zero. The level of automation is lower than it would be without C(θ).</p></div>
     """)
+    _theta = box(r"""
+    **How θ moves profit, term by term.**
+
+    - **The first two terms** are ln *Y*: under condition (4), increasing automation increases output, and
+      because the monopolist earns a share of output, it **increases profit**.
+    - **The third term** is the net markup margin: the cost C(θ) is increasing in θ, so increasing automation
+      **decreases the net markup margin** ηχ − C(θ).
+    """, "callout")
+    _key = mo.Html('<div class="callout navy"><p><b>Key point:</b> the monopolist maximizes <i>profit</i>, not output. It stops '
+                   'while ∂ln Y/∂θ is still positive. So the monopolist stops before the marginal product of automation is zero. '
+                   'The level of automation is lower than it would be without C(θ).</p></div>')
     slide(
         head("Theory", "The monopolist chooses how much to automate", step="5 / 7"),
-        cols(mo.vstack([_prob, _eq], gap=0.3), mo.vstack([_chart, foot("Illustration with K = 3, L = 1, ηχ = 0.3 and C(θ) = 0.05·(−θ − ln(1−θ)). "
-                                          "χ is the Lerner index (p − 1)/p, which is why χ ∈ (0, 1); the paper calls it a markup. Hover for values.")]),
-             widths=(1.05, 1)),
+        mo.Html(f'<div class="narrow">{_prob.text}{_eq.text}{_theta.text}{_key.text}</div>'),
+        foot("χ is the Lerner index (p − 1)/p, which is why χ ∈ (0, 1); the paper calls it a markup."),
+        gap=0.2,
     )
     return
 
@@ -429,7 +406,7 @@ def _(ELECTRIC, GREEN, INK, INK2, NAVY, alt, cols, head, mo, np, pd, slide):
     # slide: theory-7 direct vs indirect effect
     _pt = alt.param(name="pt", value=0.67, bind=alt.binding_range(min=0.05, max=0.99, step=0.01, name="θ"))
     _pd = alt.param(name="pD", value=0.37, bind=alt.binding_range(min=0.05, max=6, step=0.01, name="Gap D = ln(K/θ) − ln(L/(1−θ))"))
-    _pe = alt.param(name="pe", value=0.0, bind=alt.binding_range(min=0, max=4, step=0.05, name="Elasticity ε_Γ"))
+    _pe = alt.param(name="pe", value=0.0)   # elasticity term held at zero (no control)
     _g = pd.DataFrame({"theta": np.round(np.arange(0.02, 0.9951, 0.0025), 4)})
     _x = alt.X("theta:Q", title="θ, share of tasks already automated", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(values=[0, 0.2, 0.4, 0.6, 0.8, 1], format=".1f"))
     _y = alt.Y("req:Q", title="Capital–labor gap D", scale=alt.Scale(domain=[0, 6], clamp=True))
@@ -446,8 +423,8 @@ def _(ELECTRIC, GREEN, INK, INK2, NAVY, alt, cols, head, mo, np, pd, slide):
         align="right", fontSize=12, color=INK2).encode(x="x:Q", y="y:Q", text="t:N")
     _pt_layer = alt.Chart(pd.DataFrame({"a": [0]})).transform_calculate(theta="pt", req="min(pD, 6)").mark_point(
         filled=True, size=150, color=INK, stroke="white", strokeWidth=2.5).encode(x=_x, y=_y)
-    _map = alt.layer(_bound, _area, _edge, _arealab, _boundr, _boundt, _pt_layer).properties(
-        width=470, height=235, title=alt.Title("Where does labor scarcity raise output?", subtitle="Shaded: θ > (1−θ)ε_Γ + 1/D"))
+    _map = alt.layer(_area, _edge, _arealab, _pt_layer).properties(
+        width=470, height=235, title=alt.Title("Where does labor scarcity raise output?", subtitle="Shaded: D > 1/θ"))
     _bars_d = pd.DataFrame({"k": ["Direct  (1 − θ)", "Indirect via automation", "Net  d ln Y / d ln L"], "o": [0, 1, 2]})
     _bars = alt.Chart(_bars_d).transform_calculate(
         ind="-pt * (1 - pt) / ((1 - pt) * pe + 1 / pD)",
@@ -472,13 +449,12 @@ def _(ELECTRIC, GREEN, INK, INK2, NAVY, alt, cols, head, mo, np, pd, slide):
     _txt = mo.md(r"""
     - **Direct effect:** fewer workers means less output from manual tasks, so lower *L* lowers *Y*.
     - **Indirect effect:** lower *L* raises θ (step 6), and each extra automated task adds *D* to ln *Y*.
-    - **Aging raises output when the indirect effect wins:** θ > (1 − θ)ε_Γ + 1/D. Ignoring the elasticity,
-      this means **D > 1/θ**: a large capital–labor gap **and** substantial automation already in place.
+    - **Aging raises output when the indirect effect wins:** that requires **D > 1/θ**, a large capital–labor
+      gap **and** substantial automation already in place.
     """)
-    _note = mo.Html('<div class="callout navy"><p><b>Condition (4) is not enough.</b> (4) only says D > 0; the reversal needs D > 1/θ. '
-                    'And ε_Γ is not free: at the monopolist\'s optimum, (1 − θ)ε_Γ + 1/D ≥ 2√(θ(1 − θ)), so a reversal requires '
-                    '<b>θ > 0.8</b>, whatever the cost function (our derivation). In the illustration on the last two slides, '
-                    'net = +0.27: aging lowers output.</p></div>')
+    _note = mo.Html('<div class="callout navy"><p><b>Condition (4) is not enough.</b> (4) only says D > 0, so automating raises output. '
+                    'For aging to raise output, the gap must be larger still: D > 1/θ. At the illustration from the last two slides '
+                    '(the dot), aging lowers output.</p></div>')
     slide(
         head("Theory", "Direct vs. indirect effect of a smaller workforce", step="7 / 7"),
         _eq,
@@ -530,9 +506,7 @@ def _(D, GREEN, INK, INK2, NAVY, alt, cols, foot, head, mo, pd, slide):
     """)
     slide(
         head("Initial evidence I", "Faster-aging countries did not grow more slowly"),
-        cols(mo.vstack([_txt, foot("Figure 2 in the paper, rebuilt from the replication data. GDP: PWT 9.0, 1990–2014; aging: UN, 1990–2015. "
-                                   "Switch to new data, hover for countries, click the legend to isolate a group. "
-                                   "r and the fit line are recomputed in the browser.")]),
+        cols(mo.vstack([_txt, foot("Figure 2, Acemoglu and Restrepo 2017.")]),
              _chart, widths=(0.85, 1.3)),
     )
     return
@@ -575,9 +549,7 @@ def _(D, GREEN, INK, INK2, NAVY, alt, cols, foot, head, mo, pd, slide):
     """)
     slide(
         head("Initial evidence II", "Aging goes hand in hand with robot adoption"),
-        cols(mo.vstack([_txt, foot("Figure 3 in the paper (IFR data; Japan excluded by the IFR). The IFR data are proprietary, so the points were "
-                                   "recovered from the vector paths of the published figure. The x-values match the replication data "
-                                   "exactly (corr = 1.000), and OLS on the recovered points reproduces the paper's fit line.")]),
+        cols(mo.vstack([_txt, foot("Figure 3, Acemoglu and Restrepo 2017.")]),
              _chart, widths=(0.85, 1.3)),
     )
     return
@@ -589,18 +561,17 @@ def _(head, mo, slide):
     _t = mo.Html("""
     <table style="width:100%;border-collapse:collapse;font-size:1.02rem;margin-top:.4rem">
       <thead><tr style="text-align:left;border-bottom:2px solid #0b0b0b">
-        <th style="padding:.45rem .6rem;width:34%">A raw correlation could be driven by…</th>
-        <th style="padding:.45rem .6rem;width:40%">…so the paper adds</th>
-        <th style="padding:.45rem .6rem">Column</th></tr></thead>
+        <th style="padding:.45rem .6rem;width:50%">A raw correlation could be driven by…</th>
+        <th style="padding:.45rem .6rem">…so the paper adds</th></tr></thead>
       <tbody>
         <tr style="border-bottom:1px solid #e4e3dd"><td style="padding:.5rem .6rem"><b>Convergence:</b> poorer countries grow faster and are aging faster</td>
-            <td style="padding:.5rem .6rem">Initial log GDP per capita (1990)</td><td style="padding:.5rem .6rem">(2)</td></tr>
+            <td style="padding:.5rem .6rem">Initial log GDP per capita (1990)</td></tr>
         <tr style="border-bottom:1px solid #e4e3dd"><td style="padding:.5rem .6rem"><b>Starting point:</b> young or large countries age mechanically faster</td>
-            <td style="padding:.5rem .6rem">Initial old/young ratio and log population (1990)</td><td style="padding:.5rem .6rem">(3)</td></tr>
+            <td style="padding:.5rem .6rem">Initial old/young ratio and log population (1990)</td></tr>
         <tr style="border-bottom:1px solid #e4e3dd"><td style="padding:.5rem .6rem"><b>Regional trends:</b> East Asia aging <i>and</i> booming</td>
-            <td style="padding:.5rem .6rem">Seven World Bank region dummies</td><td style="padding:.5rem .6rem">(4)</td></tr>
+            <td style="padding:.5rem .6rem">Seven World Bank region dummies</td></tr>
         <tr><td style="padding:.5rem .6rem"><b>Reverse causality:</b> growth attracts young migrants and lowers mortality</td>
-            <td style="padding:.5rem .6rem">IV: birthrates 1960–1990, which fix today's age structure before 1990</td><td style="padding:.5rem .6rem">(5), (8)</td></tr>
+            <td style="padding:.5rem .6rem">IV: birthrates 1960–1990, which fix today's age structure before 1990</td></tr>
       </tbody></table>""")
     slide(
         head("From correlation to evidence", "Do these relationships survive stricter tests?",
@@ -608,7 +579,8 @@ def _(head, mo, slide):
         _t,
         mo.Html('<div class="callout"><p>Estimating equation (long difference, one row per country): '
                 '<b>Δ ln(GDP per capita)<sub>1990–2014</sub> = β · Δ(old/young)<sub>1990–2015</sub> + controls + ε</b>. '
-                'Robust standard errors; columns 6–8 repeat the exercise for the 35 OECD countries.</p></div>'),
+                'Robust standard errors. This procedure was repeated for only OECD countries to see if results would be more potent '
+                'among capital-rich countries, which serves as a test of the theoretical results.</p></div>'),
     )
     return
 
@@ -621,29 +593,22 @@ def _(D, INK, INK2, MUTED, NAVY, alt, foot, head, mo, pd, slide):
     _names = {1: "(1) Raw", 2: "(2) + GDP₀", 3: "(3) + demog.", 4: "(4) + regions", 5: "(5) IV",
               6: "(6) Raw", 7: "(7) + controls", 8: "(8) IV"}
     _r["c"] = _r.col.map(_names)
-    _long = pd.concat([
-        _r.assign(src="Paper", b=_r.b_paper, lo=_r.b_paper - 1.96 * _r.se_paper, hi=_r.b_paper + 1.96 * _r.se_paper),
-        _r.assign(src="This replication", lo=_r.b - 1.96 * _r.se, hi=_r.b + 1.96 * _r.se)])
-    _long = _long[["panel", "col", "c", "src", "b", "lo", "hi", "se", "F"]]
+    _long = _r.assign(lo=_r.b - 1.96 * _r.se, hi=_r.b + 1.96 * _r.se)[["panel", "col", "c", "b", "lo", "hi", "se", "F"]]
     _p = alt.param(name="pan", value="A", bind=alt.binding_radio(
         options=["A", "B", "C"], labels=["A · old/young, 1990–2015", "B · mean age 20+, 1990–2015", "C · old/young, 2000–2015"], name="Panel"))
     _order = list(_names.values())
     _xsc = alt.Scale(domain=_order, paddingInner=0, paddingOuter=0)
     _X = alt.X("c:N", title=None, sort=_order, scale=_xsc, axis=alt.Axis(labelAngle=0, labelFontSize=12.5, domain=False, ticks=False, labelPadding=8))
     _b = alt.Chart(_long).transform_filter("datum.panel == pan")
-    _off = alt.XOffset("src:N", scale=alt.Scale(domain=["Paper", "This replication"], range=[52.5, 72.5]))
-    _ci = _b.mark_rule(strokeWidth=2).encode(x=_X, xOffset=_off, y=alt.Y("lo:Q", title=None, axis=alt.Axis(minExtent=300, maxExtent=300)), y2="hi:Q",
-                                              color=alt.Color("src:N", scale=alt.Scale(domain=["Paper", "This replication"], range=[MUTED, NAVY]),
-                                                              legend=alt.Legend(title=None, orient="top-left", direction="horizontal")))
-    _pt = _b.mark_point(size=90, strokeWidth=2.2).encode(
-        x=_X, xOffset=_off, y="b:Q", color=alt.Color("src:N", legend=None),
-        fill=alt.condition(alt.datum.src == "This replication", alt.value(NAVY), alt.value("white")),
-        tooltip=[alt.Tooltip("c:N", title="Column"), alt.Tooltip("src:N", title="Source"), alt.Tooltip("b:Q", format=".3f", title="β"),
+    _ci = _b.mark_rule(strokeWidth=2.4, color=NAVY).encode(x=_X, y=alt.Y("lo:Q", title=None, axis=alt.Axis(minExtent=300, maxExtent=300)), y2="hi:Q")
+    _pt = _b.mark_point(size=100, filled=True, color=NAVY, stroke="white", strokeWidth=2).encode(
+        x=_X, y="b:Q",
+        tooltip=[alt.Tooltip("c:N", title="Column"), alt.Tooltip("b:Q", format=".3f", title="β"),
                  alt.Tooltip("se:Q", format=".3f", title="s.e."), alt.Tooltip("F:Q", format=".2f", title="First-stage F")])
-    _bl = _b.transform_filter("datum.src == 'This replication'").mark_text(dx=10, align="left", fontSize=12, fontWeight=600, color=INK2).encode(
-        x=_X, xOffset=_off, y="b:Q", text=alt.Text("b:Q", format=".2f"))
+    _bl = _b.mark_text(dx=10, align="left", fontSize=12.5, fontWeight=600, color=INK2).encode(
+        x=_X, y="b:Q", text=alt.Text("b:Q", format=".2f"))
     _z = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(color=INK, strokeWidth=1).encode(y="y:Q")
-    _sep = alt.Chart(pd.DataFrame({"c": ["(6) Raw"]})).mark_rule(color="#c3c2b7", strokeDash=[3, 3], xOffset=-62).encode(x=alt.X("c:N", sort=_order))
+    _sep = alt.Chart(pd.DataFrame({"c": ["(6) Raw"]})).mark_rule(color="#c3c2b7", strokeDash=[3, 3], xOffset=-62.5).encode(x=alt.X("c:N", sort=_order))
     _grp = alt.Chart(pd.DataFrame({"c": ["(3) + demog.", "(7) + controls"], "t": ["All 169 countries", "35 OECD countries"]})).mark_text(
         fontSize=13, fontWeight=600, color=INK, y=-14).encode(x=alt.X("c:N", sort=_order), text="t:N")
     _top = alt.layer(_z, _sep, _ci, _pt, _bl, _grp).add_params(_p).properties(
@@ -663,54 +628,46 @@ def _(D, INK, INK2, MUTED, NAVY, alt, foot, head, mo, pd, slide):
     ).properties(width=1000, height=92)
     _chart = alt.vconcat(_top, _mat, spacing=6).resolve_scale(x="shared")
     slide(
-        head("Replication", "Table 1: the positive relationship survives the controls",
+        head("Empirical analysis", "Table 1: the positive relationship survives the controls",
              sub="Columns add controls left to right. The full-sample estimate stays positive and significant; in the OECD only the IV is."),
         mo.hstack([
-            mo.Html('<div class="tiles"><div class="tile"><div class="lab">Cells matched to the paper</div><div class="val">30<small> / 30</small></div>'
-                    '<div class="note">β, s.e., F, J, N · Tables 1–2</div></div>'
-                    '<div class="tile"><div class="lab">Col 4, all countries</div><div class="val">0.77<small> (0.32)</small></div><div class="note">with region trends</div></div>'
-                    '<div class="tile"><div class="lab">Col 5, IV</div><div class="val">1.70<small> (0.41)</small></div><div class="note">first-stage F = 19.4</div></div>'
-                    '<div class="tile"><div class="lab">Col 8, OECD IV</div><div class="val">1.19<small> (0.46)</small></div><div class="note">first-stage F = 7.4 (weak)</div></div></div>')],
+            mo.Html('<div class="tiles">'
+                    '<div class="tile"><div class="lab">All countries</div><div class="val">0.77<small> (0.32)</small></div><div class="note">with region trends</div></div>'
+                    '<div class="tile"><div class="lab">All countries IV</div><div class="val">1.70<small> (0.41)</small></div><div class="note">first-stage F = 19.4</div></div>'
+                    '<div class="tile"><div class="lab">OECD IV</div><div class="val">1.19<small> (0.46)</small></div><div class="note">first-stage F = 7.4 (weak)</div></div></div>')],
             justify="start"),
         _chart,
-        foot("Hollow gray: published estimate. Filled navy: this replication (Python, independent of Stata). The two sit side by side because they are identical. "
-             "Switch panels to see the robustness checks. Coefficients in Panel B are per year of mean age."),
+        foot("Table 1, Acemoglu and Restrepo 2017. Switch panels to see the robustness checks; Panel B coefficients are per year of mean age."),
         gap=0.3,
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(D, INK, INK2, NAVY, alt, cols, head, mo, pd, slide):
+def _(D, INK, INK2, NAVY, alt, head, mo, pd, slide):
     # slide: rep-t2
     _r = pd.DataFrame(D["replication"])
     _r = _r[_r.table == 2].copy()
     _nm = {1: "(1) Pooled", 2: "(2) + trends", 3: "(3) + country FE", 4: "(4) IV", 5: "(5) OECD FE", 6: "(6) OECD IV"}
     _r["c"] = _r.col.map(_nm)
     _r["lo"], _r["hi"] = _r.b - 1.96 * _r.se, _r.b + 1.96 * _r.se
-    _X = alt.X("c:N", sort=list(_nm.values()), title=None, axis=alt.Axis(labelAngle=0, labelFontSize=12, domain=False, ticks=False))
+    _X = alt.X("c:N", sort=list(_nm.values()), title=None, axis=alt.Axis(labelAngle=0, labelFontSize=13, domain=False, ticks=False, labelPadding=8))
     _ci = alt.Chart(_r).mark_rule(strokeWidth=2.2, color=NAVY).encode(x=_X, y=alt.Y("lo:Q", title="Coefficient, 95% CI"), y2="hi:Q")
     _pt = alt.Chart(_r).mark_point(filled=True, size=90, color=NAVY, stroke="white", strokeWidth=2).encode(
         x=_X, y="b:Q", tooltip=[alt.Tooltip("c:N", title="Column"), alt.Tooltip("b:Q", format=".3f"), alt.Tooltip("se:Q", format=".3f"),
                                 alt.Tooltip("F:Q", format=".2f", title="First-stage F"), alt.Tooltip("N:Q")])
     _lb = alt.Chart(_r).mark_text(dx=14, align="left", fontSize=12, fontWeight=600, color=INK2).encode(x=_X, y="b:Q", text=alt.Text("b:Q", format=".2f"))
     _z = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(color=INK).encode(y="y:Q")
-    _chart = alt.layer(_z, _ci, _pt, _lb).properties(width=560, height=300, title=alt.Title(
+    _chart = alt.layer(_z, _ci, _pt, _lb).properties(width=1000, height=340, title=alt.Title(
         "Table 2: two stacked 25-year differences (1965–90, 1990–2015)", subtitle="Country fixed effects absorb country-specific trends; SEs clustered by country"))
-    _txt = mo.md(r"""
-    ### What the paper doesn't say (found by replicating)
-    - **Six instruments, not five:** birthrates 1960–65 through **1985–90**. Only six reproduce F = 19.36.
-    - "Initial GDP **per worker**" is actually GDP **per capita**.
-    - GDP ends in **2014** (the last year of PWT 9.0); aging ends in **2015**.
-    - Table 2 lets only initial GDP have a period-specific slope. That is the only one of 16 variants that matches.
-
-    ### Weak instruments
-    The OECD first stages are weak: **F = 7.4** (Table 1 col 8) and **F = 4.7** (Table 2 col 6), both below the
-    rule-of-thumb 10. The paper does not discuss this.
-    """)
+    _weak = mo.Html('<div class="callout navy" style="max-width:66rem;margin:0 auto"><p><b>Weak instruments.</b> The OECD first stages are weak: '
+                    '<b>F = 7.4</b> (OECD IV, Table 1) and <b>F = 4.7</b> (OECD IV, stacked), both below the rule-of-thumb 10. '
+                    'The paper does not discuss this.</p></div>')
     slide(
-        head("Replication", "Stacked differences, and what replicating revealed"),
-        cols(_txt, _chart, widths=(1, 1.1)),
+        head("Empirical analysis", "Extending the window of data"),
+        mo.hstack([_chart], justify="center"),
+        _weak,
+        gap=0.8,
     )
     return
 
@@ -741,67 +698,14 @@ def _(head, mo, slide):
 
 
 @app.cell(hide_code=True)
-def _(D, GREEN, INK, NAVY, alt, foot, head, np, pd, slide):
-    # slide: ext-results
-    _e = pd.DataFrame(D["extension"])
-    _spec = [((1, "A", 4), "Col 4 · OLS + region trends", "OLS"), ((1, "A", 5), "Col 5 · IV, all countries", "IV"),
-             ((1, "A", 8), "Col 8 · IV, OECD", "IV"), ((2, "", 4), "Table 2 col 4 · IV, stacked", "IV")]
-    _rows = []
-    for (_t, _p, _c), _title, _kind in _spec:
-        _s = _e[(_e.table == _t) & (_e.panel == _p) & (_e.col == _c)]
-        for _, _x in _s.iterrows():
-            _w = dict(facet=_title, label=_x.label, order=_x.order, kind=_kind, N=_x.N, F=_x.F, F_ji=_x.F_ji)
-            _rows.append(dict(_w, mode="wald", b=_x.b, lo=_x.b - 1.96 * _x.se, hi=_x.b + 1.96 * _x.se, status="Wald"))
-            if _kind == "IV":
-                _rows.append(dict(_w, mode="ar6", b=_x.b, lo=_x.AR_lo, hi=_x.AR_hi, status=_x.AR_status))
-                _rows.append(dict(_w, mode="arji", b=_x.b_ji, lo=_x.AR_ji_lo, hi=_x.AR_ji_hi, status=_x.AR_ji_status))
-    _f = pd.DataFrame(_rows)
-    _f["sig"] = np.where((_f.lo > 0) | (_f.hi < 0), "Interval excludes 0", "Interval includes 0")
-    _m = alt.param(name="mode", value="wald", bind=alt.binding_radio(
-        options=["wald", "ar6", "arji"], labels=["Wald 95% CI (paper's method)", "Anderson–Rubin, 6 instruments", "Anderson–Rubin, 1 instrument (most robust)"],
-        name="Interval"))
-    _dom = {"Col 4 · OLS + region trends": [-0.4, 1.6], "Col 5 · IV, all countries": [-0.5, 4], "Col 8 · IV, OECD": [-2, 6], "Table 2 col 4 · IV, stacked": [-3, 7.5]}
-    _order = [l for l in _f.sort_values("order").label.unique()]
-    _charts = []
-    for _i, (_ttl, _d) in enumerate(_dom.items()):
-        _b = alt.Chart(_f[_f.facet == _ttl]).transform_filter("datum.mode == mode || datum.kind == 'OLS'")
-        _Y = alt.Y("label:N", sort=_order, title=None,
-                   axis=alt.Axis(labelFontSize=12.5, labelLimit=240, domain=False, ticks=False, labels=_i == 0, labelPadding=8))
-        _X = alt.X("lo:Q", title=None, scale=alt.Scale(domain=_d, clamp=True, nice=False), axis=alt.Axis(tickCount=5))
-        _col = alt.Color("sig:N", scale=alt.Scale(domain=["Interval excludes 0", "Interval includes 0"], range=[NAVY, "#a9a8a2"]),
-                         legend=alt.Legend(title=None, orient="bottom", direction="horizontal") if _i == 0 else None)
-        _ci = _b.mark_rule(strokeWidth=2.6).encode(y=_Y, x=_X, x2="hi:Q", color=_col)
-        _pt = _b.mark_point(filled=True, size=80, stroke="white", strokeWidth=2).encode(
-            y=_Y, x=alt.X("b:Q", scale=alt.Scale(domain=_d, clamp=True)), color=alt.Color("sig:N", legend=None),
-            tooltip=[alt.Tooltip("label:N", title="Run"), alt.Tooltip("b:Q", format=".3f", title="β"),
-                     alt.Tooltip("lo:Q", format=".2f", title="Lower"), alt.Tooltip("hi:Q", format=".2f", title="Upper"),
-                     alt.Tooltip("status:N", title="Interval"), alt.Tooltip("F:Q", format=".1f", title="First-stage F"), alt.Tooltip("N:Q")])
-        _orig = _b.transform_filter("datum.order == 0").mark_rule(color=GREEN, strokeWidth=1.5, strokeDash=[4, 3]).encode(
-            x=alt.X("b:Q", scale=alt.Scale(domain=_d)))
-        _z = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color=INK, strokeWidth=1).encode(x=alt.X("x:Q", scale=alt.Scale(domain=_d)))
-        _charts.append(alt.layer(_z, _orig, _ci, _pt).properties(width=255, height=320, title=alt.Title(_ttl, fontSize=13.5)))
-    _chart = alt.hconcat(*_charts, spacing=14).add_params(_m).resolve_scale(color="shared")
-    slide(
-        head("Extension", "The full-sample result holds; the OECD result does not",
-             sub="Each row is one run. Dashed green line: the original estimate. Gray: the interval includes zero."),
-        _chart,
-        foot("Top four rows: same 1990–2015 window, data swapped one source at a time. Bottom four: longer windows, with original or shifted "
-             "(pre-1990) instruments. The 6-instrument Anderson–Rubin set tests the coefficient and instrument validity jointly; the "
-             "1-instrument version (mean birthrate) tests the coefficient alone."),
-        gap=0.4,
-    )
-    return
-
-
-@app.cell(hide_code=True)
 def _(head, mo, slide):
     # slide: ext-implications
     _tiles = mo.Html("""
     <div class="tiles">
-      <div class="tile"><div class="lab">Col 5 · IV, all countries</div><div class="val">1.70 → 1.53</div><div class="note">1990–2015 → 1990–2023 · still positive; borderline under the 1-instrument AR set</div></div>
-      <div class="tile"><div class="lab">Col 4 · OLS + regions</div><div class="val">0.77 → 0.58</div><div class="note">erodes: part of the pattern is regional</div></div>
-      <div class="tile"><div class="lab">Col 8 · IV, OECD</div><div class="val">1.19 → 0.47</div><div class="note">imprecise in every new-data run; 1-instrument estimate ≈ 1.0–1.5</div></div>
-      <div class="tile"><div class="lab">Table 2 col 4 · stacked IV</div><div class="val">2.17 → 1.25</div><div class="note">intervals include zero once new years are added</div></div>
+      <div class="tile"><div class="lab">All countries IV</div><div class="val">1.70 → 1.53</div><div class="note">1990–2015 → 1990–2023 · still positive; borderline under the 1-instrument AR set</div></div>
+      <div class="tile"><div class="lab">All countries</div><div class="val">0.77 → 0.58</div><div class="note">erodes: part of the pattern is regional</div></div>
+      <div class="tile"><div class="lab">OECD IV</div><div class="val">1.19 → 0.47</div><div class="note">imprecise in every new-data run; 1-instrument estimate ≈ 1.0–1.5</div></div>
+      <div class="tile"><div class="lab">Stacked IV (Table 2)</div><div class="val">2.17 → 1.25</div><div class="note">intervals include zero once new years are added</div></div>
     </div>""")
     _txt = mo.md(r"""
     ### What it means for the direct and indirect effects
@@ -810,7 +714,6 @@ def _(head, mo, slide):
     - **The full sample still says "no drag"** through 2023, so the stagnation prediction still fails.
     - **But the model says the offset should be strongest where capital is abundant** (large *D*) and automation
       is advanced (high θ), which describes the OECD economies. That is exactly where the evidence **does not survive** new data.
-    - **COVID is not the story:** 2019 ≈ 2023.
 
     <div class="callout"><p><b>Bottom line.</b> The stylized fact (aging has not hurt growth) is robust. The evidence that
     <i>automation</i> is why it has not is much weaker than the paper suggests.</p></div>
@@ -840,12 +743,10 @@ def _(box, head, mo, slide):
     - **Weak OECD instruments** (F = 7.4, 4.7); birthrates may affect growth through other channels (demographic dividend, schooling).
     - The robot evidence is a 49-country correlation the authors call "neither causal".
     - **The OECD result doesn't survive** new data; the positive association sits mostly in **poorer** countries.
-    - Doesn't engage the monetary channel: Eggertsson, Lancastre & Summers (2019) find aging hurts growth at the zero lower bound.
     """, "swcol w")
-    _yours = mo.Html('<div class="yours">Your notes…</div>')
     slide(
         head("Discussion", "Strengths and weaknesses"),
-        mo.hstack([mo.vstack([_s, _yours]), mo.vstack([_w, _yours])], widths=[1, 1.15], gap=1.6),
+        mo.hstack([_s, _w], widths=[1, 1.15], gap=1.6),
     )
     return
 
